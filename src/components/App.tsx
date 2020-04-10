@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { Toggler } from './Toggler';
+import Player from './Player';
 
 function App() {
   return (
     <div className="App">
-      <Toggler />
+      <Player />
     </div>
   );
 }
