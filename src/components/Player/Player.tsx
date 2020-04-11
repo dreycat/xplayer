@@ -20,14 +20,13 @@ type TStateSchema = {
   };
 };
 
-type TChangeVolume = { type: 'CHANGE_VOLUME'; volume: number };
-
 type TEvent =
   | { type: 'PLAY' }
   | { type: 'PAUSE' }
+  | { type: 'FAIL' }
   | { type: 'PREV_TRACK' }
   | { type: 'NEXT_TRACK' }
-  | { type: 'FAIL' }
+  | { type: 'CHANGE_TRACK'; id: number }
   | { type: 'CHANGE_VOLUME'; volume: number }
   | { type: 'LOADED'; audioRef: HTMLAudioElement }
   | { type: 'RETRY'; audioRef: HTMLAudioElement };
@@ -148,9 +147,16 @@ const prevTrack = assign(({ currentTrack }: TContext) => {
   };
 });
 
+const changeTrack = assign(({ currentTrack }: TContext, { id: idx }: any) => {
+  const newTrack = playlist.find(({ id }) => id === idx) ?? currentTrack;
+  return {
+    currentTrack: newTrack,
+  };
+});
+
 const Player = () => {
   const [state, send] = useMachine(audioMachine, {
-    actions: { setAudioRef, play, pause, load, nextTrack, prevTrack, changeVolume },
+    actions: { setAudioRef, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack },
   });
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -188,7 +194,7 @@ const Player = () => {
       <p>{state.context.currentTrack.title}</p>
       <button onClick={() => send('PREV_TRACK')}>prev</button>
       <button onClick={() => send('NEXT_TRACK')}>next</button>
-      {state.matches('failure') && <p>что-то пошло не так</p>}
+
       <input
         type="range"
         min={0}
@@ -197,6 +203,16 @@ const Player = () => {
         value={state.context.volume}
         onChange={(event) => send('CHANGE_VOLUME', { volume: parseFloat(event.target.value) })}
       />
+
+      <ul>
+        {playlist.map(({ id, name }) => (
+          <li key={id} onClick={() => send('CHANGE_TRACK', { id })}>
+            {name}
+          </li>
+        ))}
+      </ul>
+
+      {state.matches('failure') && <p>что-то пошло не так</p>}
     </>
   );
 };
