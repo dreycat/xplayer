@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
 
@@ -8,6 +8,7 @@ import { ITrack } from './types';
 interface IContext {
   audioRef: HTMLAudioElement | null;
   currentTrack: ITrack;
+  volume: number;
 }
 
 const getPlaylistTransitions = (target: string) => ({
@@ -25,12 +26,20 @@ const getPlaylistTransitions = (target: string) => ({
   },
 });
 
+const changeVolumeTransition = (target: string) => ({
+  CHANGE_VOLUME: {
+    target,
+    actions: 'changeVolume',
+  },
+});
+
 const audioMachine = Machine<IContext>({
   id: 'audio',
   initial: 'loading',
   context: {
     audioRef: null,
     currentTrack: playlist[0],
+    volume: 0.7,
   },
   states: {
     loading: {
@@ -50,6 +59,7 @@ const audioMachine = Machine<IContext>({
         },
         FAIL: 'failure',
         ...getPlaylistTransitions('paused'),
+        ...changeVolumeTransition('paused'),
       },
     },
     playing: {
@@ -60,6 +70,7 @@ const audioMachine = Machine<IContext>({
         },
         FAIL: 'failure',
         ...getPlaylistTransitions('playing'),
+        ...changeVolumeTransition('playing'),
       },
     },
     failure: {
@@ -90,6 +101,15 @@ const load = (context: IContext) => {
   context.audioRef?.load();
 };
 
+const changeVolume = assign(({ audioRef }: IContext, { volume }: any) => {
+  if (audioRef) {
+    audioRef.volume = volume;
+  }
+  return {
+    volume,
+  };
+});
+
 const nextTrack = assign(({ currentTrack }: IContext) => {
   const { id: trackId } = currentTrack;
   const { length } = playlist;
@@ -108,9 +128,10 @@ const prevTrack = assign(({ currentTrack }: IContext) => {
 });
 
 const Player = () => {
-  const [state, send] = useMachine(audioMachine, { actions: { setAudioRef, play, pause, load, nextTrack, prevTrack } });
+  const [state, send] = useMachine(audioMachine, {
+    actions: { setAudioRef, play, pause, load, nextTrack, prevTrack, changeVolume },
+  });
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [volume, setVolume] = useState(0.7);
 
   console.log('value: ', state.value);
   console.log(state.context);
@@ -124,17 +145,6 @@ const Player = () => {
 
     return () => clearTimeout(id);
   }, [state.value, send]);
-
-  const changeValue = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      if (audioRef.current) {
-        const volume = parseFloat(event.target.value);
-        audioRef.current.volume = volume;
-        setVolume(volume);
-      }
-    },
-    [audioRef]
-  );
 
   return (
     <>
@@ -158,7 +168,14 @@ const Player = () => {
       <button onClick={() => send('PREV_TRACK')}>prev</button>
       <button onClick={() => send('NEXT_TRACK')}>next</button>
       {state.matches('failure') && <p>что-то пошло не так</p>}
-      <input type="range" min={0} max={1} step={0.01} value={volume} onChange={changeValue} />
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={state.context.volume}
+        onChange={(event) => send('CHANGE_VOLUME', { volume: parseFloat(event.target.value) })}
+      />
     </>
   );
 };
