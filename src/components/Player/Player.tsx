@@ -3,13 +3,34 @@ import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
 
 import playlist from './playlist';
-import { ITrack } from './types';
+import { ITrack } from './interfaces';
 
-interface IContext {
+type TContext = {
   audioRef: HTMLAudioElement | null;
   currentTrack: ITrack;
   volume: number;
-}
+};
+
+type TStateSchema = {
+  states: {
+    loading: {};
+    paused: {};
+    playing: {};
+    failure: {};
+  };
+};
+
+type TChangeVolume = { type: 'CHANGE_VOLUME'; volume: number };
+
+type TEvent =
+  | { type: 'PLAY' }
+  | { type: 'PAUSE' }
+  | { type: 'PREV_TRACK' }
+  | { type: 'NEXT_TRACK' }
+  | { type: 'FAIL' }
+  | { type: 'CHANGE_VOLUME'; volume: number }
+  | { type: 'LOADED'; audioRef: HTMLAudioElement }
+  | { type: 'RETRY'; audioRef: HTMLAudioElement };
 
 const getPlaylistTransitions = (target: string) => ({
   PREV_TRACK: {
@@ -33,7 +54,7 @@ const changeVolumeTransition = (target: string) => ({
   },
 });
 
-const audioMachine = Machine<IContext>({
+const audioMachine = Machine<TContext, TStateSchema, TEvent>({
   id: 'audio',
   initial: 'loading',
   context: {
@@ -89,19 +110,19 @@ const setAudioRef = assign({
   audioRef: (_, event: any) => event.audioRef,
 });
 
-const play = (context: IContext) => {
+const play = (context: TContext) => {
   context.audioRef?.play();
 };
 
-const pause = (context: IContext) => {
+const pause = (context: TContext) => {
   context.audioRef?.pause();
 };
 
-const load = (context: IContext) => {
+const load = (context: TContext) => {
   context.audioRef?.load();
 };
 
-const changeVolume = assign(({ audioRef }: IContext, { volume }: any) => {
+const changeVolume = assign(({ audioRef }: TContext, { volume }: any) => {
   if (audioRef) {
     audioRef.volume = volume;
   }
@@ -110,7 +131,7 @@ const changeVolume = assign(({ audioRef }: IContext, { volume }: any) => {
   };
 });
 
-const nextTrack = assign(({ currentTrack }: IContext) => {
+const nextTrack = assign(({ currentTrack }: TContext) => {
   const { id: trackId } = currentTrack;
   const { length } = playlist;
   const newTrack = trackId < length - 1 ? playlist[trackId + 1] : currentTrack;
@@ -119,7 +140,7 @@ const nextTrack = assign(({ currentTrack }: IContext) => {
   };
 });
 
-const prevTrack = assign(({ currentTrack }: IContext) => {
+const prevTrack = assign(({ currentTrack }: TContext) => {
   const { id: trackId } = currentTrack;
   const newTrack = trackId > 0 ? playlist[trackId - 1] : currentTrack;
   return {
