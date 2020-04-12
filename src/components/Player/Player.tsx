@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
 
@@ -6,32 +6,36 @@ import playlist from './playlist';
 import { ITrack } from './interfaces';
 
 type TContext = {
-  audioRef: HTMLAudioElement | null;
+  audioEl: HTMLAudioElement | null;
   currentTrack: ITrack;
   volume: number;
 };
 
+type TStates = {
+  loading: {};
+  paused: {};
+  playing: {};
+  ended: {};
+  failure: {};
+};
+
 type TStateSchema = {
-  states: {
-    loading: {};
-    paused: {};
-    playing: {};
-    failure: {};
-  };
+  states: TStates;
 };
 
 type TEvent =
   | { type: 'PLAY' }
   | { type: 'PAUSE' }
+  | { type: 'END' }
   | { type: 'FAIL' }
   | { type: 'PREV_TRACK' }
   | { type: 'NEXT_TRACK' }
   | { type: 'CHANGE_TRACK'; id: number }
   | { type: 'CHANGE_VOLUME'; volume: number }
-  | { type: 'LOADED'; audioRef: HTMLAudioElement }
-  | { type: 'RETRY'; audioRef: HTMLAudioElement };
+  | { type: 'LOADED'; audioEl: HTMLAudioElement | null }
+  | { type: 'RETRY'; audioEl: HTMLAudioElement | null };
 
-const getPlaylistTransitions = (target: string) => ({
+const getPlaylistTransitions = (target: keyof TStates) => ({
   PREV_TRACK: {
     target,
     actions: 'prevTrack',
@@ -46,7 +50,7 @@ const getPlaylistTransitions = (target: string) => ({
   },
 });
 
-const changeVolumeTransition = (target: string) => ({
+const changeVolumeTransition = (target: keyof TStates) => ({
   CHANGE_VOLUME: {
     target,
     actions: 'changeVolume',
@@ -57,7 +61,7 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
   id: 'audio',
   initial: 'loading',
   context: {
-    audioRef: null,
+    audioEl: null,
     currentTrack: playlist[0],
     volume: 0.7,
   },
@@ -66,7 +70,7 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
       on: {
         LOADED: {
           target: 'paused',
-          actions: 'setAudioRef',
+          actions: 'setAudioEl',
         },
         FAIL: 'failure',
       },
@@ -88,16 +92,28 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
           target: 'paused',
           actions: 'pause',
         },
+        END: 'ended',
         FAIL: 'failure',
         ...getPlaylistTransitions('playing'),
         ...changeVolumeTransition('playing'),
+      },
+    },
+    ended: {
+      on: {
+        PLAY: {
+          target: 'playing',
+          actions: 'play',
+        },
+        FAIL: 'failure',
+        ...getPlaylistTransitions('playing'),
+        ...changeVolumeTransition('ended'),
       },
     },
     failure: {
       on: {
         RETRY: {
           target: 'loading',
-          actions: ['setAudioRef', 'load'],
+          actions: ['setAudioEl', 'load'],
         },
         ...getPlaylistTransitions('loading'),
       },
@@ -105,25 +121,25 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
   },
 });
 
-const setAudioRef = assign({
-  audioRef: (_, event: any) => event.audioRef,
+const setAudioEl = assign({
+  audioEl: (_, event: any) => event.audioEl,
 });
 
 const play = (context: TContext) => {
-  context.audioRef?.play();
+  context.audioEl?.play()?.catch(console.error);
 };
 
 const pause = (context: TContext) => {
-  context.audioRef?.pause();
+  context.audioEl?.pause();
 };
 
 const load = (context: TContext) => {
-  context.audioRef?.load();
+  context.audioEl?.load();
 };
 
-const changeVolume = assign(({ audioRef }: TContext, { volume }: any) => {
-  if (audioRef) {
-    audioRef.volume = volume;
+const changeVolume = assign(({ audioEl }: TContext, { volume }: any) => {
+  if (audioEl) {
+    audioEl.volume = volume;
   }
   return {
     volume,
@@ -156,18 +172,19 @@ const changeTrack = assign(({ currentTrack }: TContext, { id: idx }: any) => {
 
 const Player = () => {
   const [state, send] = useMachine(audioMachine, {
-    actions: { setAudioRef, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack },
+    actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack },
   });
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [time, setTime] = useState(0);
 
   console.log('value: ', state.value);
-  console.log(state.context);
+  // console.log(state.context);
 
   useEffect(() => {
     if (state.value !== 'failure') return;
 
     const id = setTimeout(() => {
-      send('RETRY', { audioRef: audioRef.current });
+      send({ type: 'RETRY', audioEl: audioRef.current });
     }, 3000);
 
     return () => clearTimeout(id);
@@ -176,14 +193,13 @@ const Player = () => {
   return (
     <>
       <audio
-        src={state.context.currentTrack.url}
         ref={audioRef}
-        onCanPlay={() => send('LOADED', { audioRef: audioRef.current })}
+        src={state.context.currentTrack.url}
+        onEnded={() => send('END')}
+        onError={() => send('FAIL')}
         autoPlay={state.matches('playing')}
-        onError={() => {
-          console.log('error');
-          send('FAIL');
-        }}
+        onCanPlay={() => send({ type: 'LOADED', audioEl: audioRef.current })}
+        onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
       />
       {state.matches('playing') ? (
         <button onClick={() => send('PAUSE')}>pause</button>
@@ -201,17 +217,17 @@ const Player = () => {
         max={1}
         step={0.01}
         value={state.context.volume}
-        onChange={(event) => send('CHANGE_VOLUME', { volume: parseFloat(event.target.value) })}
+        onChange={(event) => send({ type: 'CHANGE_VOLUME', volume: parseFloat(event.target.value) })}
       />
 
       <ul>
         {playlist.map(({ id, name }) => (
-          <li key={id} onClick={() => send('CHANGE_TRACK', { id })}>
+          <li key={id} onClick={() => send({ type: 'CHANGE_TRACK', id })}>
             {name}
           </li>
         ))}
       </ul>
-
+      {<span>{time}</span>}
       {state.matches('failure') && <p>что-то пошло не так</p>}
     </>
   );

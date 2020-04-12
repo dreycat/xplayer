@@ -57,6 +57,13 @@ const playlist: ITrack[] = [
     title: 'test song',
     isRadio: false,
   },
+  {
+    id: 8,
+    name: 'llama',
+    url: '/demo/llama.mp3',
+    title: 'llama',
+    isRadio: false,
+  },
 ];
 
 export default playlist;
