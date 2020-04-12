@@ -32,6 +32,7 @@ type TEvent =
   | { type: 'NEXT_TRACK' }
   | { type: 'CHANGE_TRACK'; id: number }
   | { type: 'CHANGE_VOLUME'; volume: number }
+  | { type: 'SET_CURRENT_TIME'; currentTime: number }
   | { type: 'LOADED'; audioEl: HTMLAudioElement | null }
   | { type: 'RETRY'; audioEl: HTMLAudioElement | null };
 
@@ -54,6 +55,13 @@ const changeVolumeTransition = (target: keyof TStates) => ({
   CHANGE_VOLUME: {
     target,
     actions: 'changeVolume',
+  },
+});
+
+const setCurrentTimeTransition = (target: keyof TStates) => ({
+  SET_CURRENT_TIME: {
+    target,
+    actions: 'setCurrentTime',
   },
 });
 
@@ -82,6 +90,7 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
           actions: 'play',
         },
         FAIL: 'failure',
+        ...setCurrentTimeTransition('paused'),
         ...getPlaylistTransitions('paused'),
         ...changeVolumeTransition('paused'),
       },
@@ -94,6 +103,7 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
         },
         END: 'ended',
         FAIL: 'failure',
+        ...setCurrentTimeTransition('playing'),
         ...getPlaylistTransitions('playing'),
         ...changeVolumeTransition('playing'),
       },
@@ -105,6 +115,7 @@ const audioMachine = Machine<TContext, TStateSchema, TEvent>({
           actions: 'play',
         },
         FAIL: 'failure',
+        ...setCurrentTimeTransition('paused'),
         ...getPlaylistTransitions('playing'),
         ...changeVolumeTransition('ended'),
       },
@@ -135,6 +146,12 @@ const pause = (context: TContext) => {
 
 const load = (context: TContext) => {
   context.audioEl?.load();
+};
+
+const setCurrentTime = ({ audioEl }: TContext, { currentTime }: any) => {
+  if (audioEl && currentTime !== Infinity && !isNaN(currentTime)) {
+    audioEl.currentTime = currentTime;
+  }
 };
 
 const changeVolume = assign(({ audioEl }: TContext, { volume }: any) => {
@@ -172,7 +189,7 @@ const changeTrack = assign(({ currentTrack }: TContext, { id: idx }: any) => {
 
 const Player = () => {
   const [state, send] = useMachine(audioMachine, {
-    actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack },
+    actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack, setCurrentTime },
   });
   const audioRef = useRef<HTMLAudioElement>(null);
   const [time, setTime] = useState(0);
@@ -210,6 +227,16 @@ const Player = () => {
       <p>{state.context.currentTrack.title}</p>
       <button onClick={() => send('PREV_TRACK')}>prev</button>
       <button onClick={() => send('NEXT_TRACK')}>next</button>
+
+      <input
+        type="range"
+        min={0}
+        value={state.context.currentTrack.isRadio ? 0 : audioRef.current?.currentTime ?? 0} // TODO: fix
+        max={state.context.currentTrack.isRadio ? 0 : audioRef.current?.duration ?? 0} // TODO: fix
+        step={0.1}
+        disabled={state.context.currentTrack.isRadio}
+        onChange={(event) => send({ type: 'SET_CURRENT_TIME', currentTime: parseFloat(event.currentTarget.value) })}
+      />
 
       <input
         type="range"
