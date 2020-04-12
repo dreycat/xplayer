@@ -1,0 +1,21 @@
+.main {
+  padding: 8px;
+}
+
+.row {
+  display: flex;
+}
+
+.screen {
+  padding-right: 8px;
+}
+
+.controlls {
+  padding: 8px 0;
+}
+
+.volume {
+  width: 116px;
+  padding-top: 14px;
+  font-size: 0;
+}

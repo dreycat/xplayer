@@ -1,0 +1,16 @@
+.control {
+  border: none;
+  background-color: transparent;
+  outline: none;
+  margin: 0;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.control:first-child {
+  padding-left: 0;
+}
+.mirror {
+  transform: rotateY(180deg);
+}
