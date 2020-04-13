@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 
+import Window from '../Window';
 import { usePlayer } from '../hooks/usePlayer';
 import playlist from './playlist';
 import Controlls from './Controlls';
@@ -60,18 +61,17 @@ const Player = () => {
   );
 
   return (
-    <>
-      <audio
-        ref={audioRef}
-        src={state.context.currentTrack.url}
-        onEnded={() => send('END')}
-        onError={() => send('FAIL')}
-        autoPlay={state.matches('playing')}
-        onCanPlay={() => send({ type: 'LOADED', audioEl: audioRef.current })}
-        onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
-      />
-
+    <Window label="xaudio" className={styles.position}>
       <div className={styles.main}>
+        <audio
+          ref={audioRef}
+          src={state.context.currentTrack.url}
+          onEnded={() => send('END')}
+          onError={() => send('FAIL')}
+          autoPlay={state.matches('playing')}
+          onCanPlay={() => send({ type: 'LOADED', audioEl: audioRef.current })}
+          onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
+        />
         <HeaderLayout
           screen={screen}
           marquee={marquee}
@@ -85,7 +85,7 @@ const Player = () => {
           setTrack={(id) => send({ type: 'CHANGE_TRACK', id })}
         />
       </div>
-    </>
+    </Window>
   );
 };
 
