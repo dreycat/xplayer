@@ -2,12 +2,6 @@ import React from 'react';
 
 import Player from './Player';
 
-function App() {
-  return (
-    <div className="App">
-      <Player />
-    </div>
-  );
-}
+const App = () => <Player />;
 
 export default App;

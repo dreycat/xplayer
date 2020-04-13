@@ -1,5 +1,5 @@
 {
-  "name": "xstate-audio-player",
+  "name": "xplayer",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

@@ -21,8 +21,6 @@ const Player = () => {
   const isPlaying = state.matches('playing');
   const isError = state.matches('failure');
 
-  console.log('value: ', state.value);
-
   useEffect(() => {
     if (state.value !== 'failure') return;
 
