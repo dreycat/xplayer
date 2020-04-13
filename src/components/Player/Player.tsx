@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 import Window from '../Window';
-import { usePlayer } from '../hooks/usePlayer';
+import { usePlayer } from '../../hooks/usePlayer';
 import playlist from './playlist';
 import Controlls from './Controlls';
 import Playlist from './Playlist';

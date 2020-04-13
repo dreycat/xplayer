@@ -1,7 +1,8 @@
 import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
-import { ITrack } from '../Player/interfaces';
-import playlist from '../Player/playlist';
+
+import { ITrack } from '../components/Player/interfaces';
+import playlist from '../components/Player/playlist';
 
 type TContext = {
   audioEl: HTMLAudioElement | null;
