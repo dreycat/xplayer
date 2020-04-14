@@ -223,7 +223,6 @@ export const usePlayer = () => {
     if (!isError) return;
 
     const id = setTimeout(() => {
-      console.log('ttt');
       onRetry();
     }, 3000);
 

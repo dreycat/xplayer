@@ -11,7 +11,7 @@ const playlist: ITrack[] = [
   {
     id: 1,
     name: 'SomaFM: Groove Salad',
-    url: 'http://ice6.somafm.com/groovesalad-256-mp33',
+    url: 'http://ice6.somafm.com/groovesalad-256-mp3',
     title: 'A nicely chilled plate of ambient/downtempo beats and grooves',
     isRadio: true,
   },
