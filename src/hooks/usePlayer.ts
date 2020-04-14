@@ -229,8 +229,6 @@ export const usePlayer = () => {
     return () => clearTimeout(id);
   }, [isError, onRetry]);
 
-  console.log(state.value);
-
   return {
     audio,
     state: {
