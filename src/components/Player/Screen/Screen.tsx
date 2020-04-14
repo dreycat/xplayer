@@ -4,16 +4,16 @@ import transformTime from '../../../utils/transformTime';
 import styles from './Screen.module.css';
 
 interface IProps {
-  time: number;
   isPlaying: boolean;
   isRadio: boolean;
+  currentTime: number;
 }
 
-const Screen: FC<IProps> = ({ time, isPlaying, isRadio }) => (
+const Screen: FC<IProps> = ({ currentTime, isPlaying, isRadio }) => (
   <div className={`${styles.main} border`}>
     {isRadio && <span className={styles.radio}>radio</span>}
     {isPlaying ? <span className={styles.play} /> : <span className={styles.pause} />}
-    <span className={styles.prettyTime}>{transformTime(time)}</span>
+    <span className={styles.prettyTime}>{transformTime(currentTime)}</span>
   </div>
 );
 

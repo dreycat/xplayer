@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
 
@@ -193,6 +193,7 @@ export const usePlayer = () => {
     actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack, setCurrentTime },
   });
   const [time, setTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const trackId = state.context.currentTrack.id;
   const onEnded = useCallback(() => send('END'), [send]);
@@ -213,7 +214,8 @@ export const usePlayer = () => {
       autoPlay: isPlaying,
       controls: false,
       preload: 'metadata',
-      onTimeUpdate: () => setTime(ref.current!.currentTime),
+      onTimeUpdate: () => setTime(ref.current?.currentTime ?? 0),
+      onDurationChange: () => setDuration(ref.current?.duration ?? 0),
     });
   }, [trackId, onEnded, onError, isPlaying, onLoaded]);
 
@@ -230,7 +232,8 @@ export const usePlayer = () => {
   return {
     audio,
     state: {
-      time,
+      duration,
+      currentTime: time,
       isPlaying,
       isError,
       isPaused: state.matches('paused'),

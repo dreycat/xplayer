@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 
 import Window from '../Window';
 import { usePlayer } from '../../hooks/usePlayer';
@@ -13,15 +13,13 @@ import HeaderLayout from './Layouts/HeaderLayout';
 import styles from './Player.module.css';
 
 const Player = () => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-
   const {
     audio,
-    state: { time, isPlaying, isError, isRadio, currentTrack, volume },
+    state: { duration, currentTime, isPlaying, isError, isRadio, currentTrack, volume },
     controlles: { play, pause, nextTrack, prevTrack, changeTrack, changeVolume, seek },
   } = usePlayer();
 
-  const screen = <Screen isPlaying={isPlaying} isRadio={isRadio} time={time} />;
+  const screen = <Screen isPlaying={isPlaying} isRadio={isRadio} currentTime={currentTime} />;
 
   const marquee = <Marquee isError={isError}>{currentTrack.title}</Marquee>;
 
@@ -31,15 +29,8 @@ const Player = () => {
     <Controlls play={play} pause={pause} nextTrack={nextTrack} prevTrack={prevTrack} isPlaing={isPlaying} />
   );
 
-  const progress = (
-    <Progress
-      duration={audioRef.current?.duration ?? 0}
-      currentTime={audioRef.current?.currentTime ?? 0}
-      isRadio={isRadio}
-      seek={seek}
-    />
-  );
-
+  const progress = <Progress duration={duration} currentTime={currentTime} isRadio={isRadio} seek={seek} />;
+  
   return (
     <Window label="xaudio" className={styles.position}>
       <div className={styles.main}>
