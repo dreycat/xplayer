@@ -39,15 +39,15 @@ type TEvent =
 const getPlaylistTransitions = (target: keyof TStates) => ({
   PREV_TRACK: {
     target,
-    actions: 'prevTrack',
+    actions: target === 'playing' ? ['prevTrack', 'play'] : 'prevTrack',
   },
   NEXT_TRACK: {
     target,
-    actions: 'nextTrack',
+    actions: target === 'playing' ? ['nextTrack', 'play'] : 'nextTrack',
   },
   CHANGE_TRACK: {
     target,
-    actions: 'changeTrack',
+    actions: target === 'playing' ? ['changeTrack', 'play'] : 'changeTrack',
   },
 });
 
@@ -196,12 +196,12 @@ export const usePlayer = () => {
   const [duration, setDuration] = useState(0);
 
   const trackId = state.context.currentTrack.id;
+  const isError = useMemo(() => state.matches('failure'), [state]);
+  const isPlaying = useMemo(() => state.matches('playing'), [state]);
   const onEnded = useCallback(() => send('END'), [send]);
   const onError = useCallback(() => send('FAIL'), [send]);
-  const onLoaded = useCallback(() => send({ type: 'LOADED', audioEl: ref.current }), [send, ref]);
-  const isPlaying = useMemo(() => state.matches('playing'), [state]);
-  const isError = useMemo(() => state.matches('failure'), [state]);
   const onRetry = useCallback(() => send({ type: 'RETRY', audioEl: ref.current }), [send, ref]);
+  const onLoaded = useCallback(() => send({ type: 'LOADED', audioEl: ref.current }), [send, ref]);
 
   const audio = useMemo(() => {
     const src = playlist.find(({ id }) => id === trackId)?.url ?? playlist[0].url;
@@ -228,6 +228,8 @@ export const usePlayer = () => {
 
     return () => clearTimeout(id);
   }, [isError, onRetry]);
+
+  console.log(state.value);
 
   return {
     audio,
