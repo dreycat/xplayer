@@ -220,14 +220,15 @@ export const usePlayer = () => {
   }, [trackId, onEnded, onError, isPlaying, onLoaded]);
 
   useEffect(() => {
-    if (isError) return;
+    if (!isError) return;
 
     const id = setTimeout(() => {
+      console.log('ttt');
       onRetry();
     }, 3000);
 
     return () => clearTimeout(id);
-  }, [isError, onRetry, ref]);
+  }, [isError, onRetry]);
 
   return {
     audio,
