@@ -5,19 +5,19 @@ import { ITrack } from '../interfaces';
 
 interface IProps {
   list: ITrack[];
-  currentTrack: number;
-  setTrack: (id: number) => void;
+  currentTrackId: number;
+  changeTrack: (id: number) => void;
 }
 
-const Playlist: FC<IProps> = ({ list, currentTrack, setTrack }) => (
+const Playlist: FC<IProps> = ({ list, currentTrackId, changeTrack }) => (
   <div className={styles.main}>
     <ul className={`${styles.playlist} border`}>
       {list.map(({ name, title, id }) => (
         <li
-          className={id === currentTrack ? `${styles.track} ${styles.current}` : styles.track}
+          className={id === currentTrackId ? `${styles.track} ${styles.current}` : styles.track}
           title={title}
           key={id}
-          onClick={() => setTrack(id)}
+          onClick={() => changeTrack(id)}
         >
           {name}
         </li>

@@ -187,7 +187,33 @@ const changeTrack = assign(({ currentTrack }: TContext, { id: idx }: any) => {
 });
 
 export const usePlayer = () => {
-  return useMachine(audioMachine, {
+  const [state, send] = useMachine(audioMachine, {
     actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack, setCurrentTime },
   });
+
+  return {
+    state: {
+      isPlaying: state.matches('playing'),
+      isError: state.matches('failure'),
+      isPaused: state.matches('paused'),
+      isEnded: state.matches('ended'),
+      isLoading: state.matches('loading'),
+      isRadio: state.context.currentTrack.isRadio,
+      currentTrack: state.context.currentTrack,
+      volume: state.context.volume,
+    },
+    controlles: {
+      play: () => send('PLAY'),
+      pause: () => send('PAUSE'),
+      onEnded: () => send('END'),
+      onError: () => send('FAIL'),
+      nextTrack: () => send('NEXT_TRACK'),
+      prevTrack: () => send('PREV_TRACK'),
+      onLoaded: (audioEl: HTMLAudioElement | null) => send({ type: 'LOADED', audioEl }),
+      onRetry: (audioEl: HTMLAudioElement | null) => send({ type: 'RETRY', audioEl }),
+      changeTrack: (id: number) => send({ type: 'CHANGE_TRACK', id }),
+      changeVolume: (volume: number) => send({ type: 'CHANGE_VOLUME', volume }),
+      seek: (currentTime: number) => send({ type: 'SET_CURRENT_TIME', currentTime }),
+    },
+  };
 };

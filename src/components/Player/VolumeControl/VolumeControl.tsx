@@ -3,11 +3,11 @@ import React, { FC, ChangeEvent } from 'react';
 import Range from '../Range';
 
 interface IProps {
-  setVolume: (volume: number) => void;
+  changeVolume: (volume: number) => void;
   volume: number;
 }
 
-const VolumeControl: FC<IProps> = ({ setVolume, volume }) => (
+const VolumeControl: FC<IProps> = ({ changeVolume, volume }) => (
   <Range
     type="range"
     name="track"
@@ -16,7 +16,7 @@ const VolumeControl: FC<IProps> = ({ setVolume, volume }) => (
     step="0.01"
     aria-label="volume control"
     value={volume}
-    onChange={(e: ChangeEvent<HTMLInputElement>) => setVolume(parseFloat(e.target.value))}
+    onChange={(e: ChangeEvent<HTMLInputElement>) => changeVolume(parseFloat(e.target.value))}
   />
 );
 
