@@ -1,3 +1,4 @@
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useMachine } from '@xstate/react';
 import { Machine, assign } from 'xstate';
 
@@ -187,14 +188,51 @@ const changeTrack = assign(({ currentTrack }: TContext, { id: idx }: any) => {
 });
 
 export const usePlayer = () => {
+  const ref = useRef<HTMLAudioElement>(null);
   const [state, send] = useMachine(audioMachine, {
     actions: { setAudioEl, play, pause, load, nextTrack, prevTrack, changeVolume, changeTrack, setCurrentTime },
   });
+  const [time, setTime] = useState(0);
+
+  const trackId = state.context.currentTrack.id;
+  const onEnded = useCallback(() => send('END'), [send]);
+  const onError = useCallback(() => send('FAIL'), [send]);
+  const onLoaded = useCallback(() => send({ type: 'LOADED', audioEl: ref.current }), [send, ref]);
+  const isPlaying = useMemo(() => state.matches('playing'), [state]);
+  const isError = useMemo(() => state.matches('failure'), [state]);
+  const onRetry = useCallback(() => send({ type: 'RETRY', audioEl: ref.current }), [send, ref]);
+
+  const audio = useMemo(() => {
+    const src = playlist.find(({ id }) => id === trackId)?.url ?? playlist[0].url;
+    return React.createElement('audio', {
+      ref,
+      src,
+      onError,
+      onEnded,
+      onCanPlay: onLoaded,
+      autoPlay: isPlaying,
+      controls: false,
+      preload: 'metadata',
+      onTimeUpdate: () => setTime(ref.current!.currentTime),
+    });
+  }, [trackId, onEnded, onError, isPlaying, onLoaded]);
+
+  useEffect(() => {
+    if (isError) return;
+
+    const id = setTimeout(() => {
+      onRetry();
+    }, 3000);
+
+    return () => clearTimeout(id);
+  }, [isError, onRetry, ref]);
 
   return {
+    audio,
     state: {
-      isPlaying: state.matches('playing'),
-      isError: state.matches('failure'),
+      time,
+      isPlaying,
+      isError,
       isPaused: state.matches('paused'),
       isEnded: state.matches('ended'),
       isLoading: state.matches('loading'),
@@ -203,14 +241,14 @@ export const usePlayer = () => {
       volume: state.context.volume,
     },
     controlles: {
+      onEnded,
+      onError,
+      onLoaded,
+      onRetry,
       play: () => send('PLAY'),
       pause: () => send('PAUSE'),
-      onEnded: () => send('END'),
-      onError: () => send('FAIL'),
       nextTrack: () => send('NEXT_TRACK'),
       prevTrack: () => send('PREV_TRACK'),
-      onLoaded: (audioEl: HTMLAudioElement | null) => send({ type: 'LOADED', audioEl }),
-      onRetry: (audioEl: HTMLAudioElement | null) => send({ type: 'RETRY', audioEl }),
       changeTrack: (id: number) => send({ type: 'CHANGE_TRACK', id }),
       changeVolume: (volume: number) => send({ type: 'CHANGE_VOLUME', volume }),
       seek: (currentTime: number) => send({ type: 'SET_CURRENT_TIME', currentTime }),

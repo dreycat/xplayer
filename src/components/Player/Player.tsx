@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef } from 'react';
 
 import Window from '../Window';
 import { usePlayer } from '../../hooks/usePlayer';
@@ -14,33 +14,12 @@ import styles from './Player.module.css';
 
 const Player = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [time, setTime] = useState(0);
+
   const {
-    state: { isPlaying, isError, isRadio, currentTrack, volume },
-    controlles: {
-      play,
-      pause,
-      onEnded,
-      onError,
-      nextTrack,
-      prevTrack,
-      onLoaded,
-      onRetry,
-      changeTrack,
-      changeVolume,
-      seek,
-    },
+    audio,
+    state: { time, isPlaying, isError, isRadio, currentTrack, volume },
+    controlles: { play, pause, nextTrack, prevTrack, changeTrack, changeVolume, seek },
   } = usePlayer();
-
-  useEffect(() => {
-    if (isError) return;
-
-    const id = setTimeout(() => {
-      onRetry(audioRef.current);
-    }, 3000);
-
-    return () => clearTimeout(id);
-  }, [isError, onRetry, audioRef]);
 
   const screen = <Screen isPlaying={isPlaying} isRadio={isRadio} time={time} />;
 
@@ -64,15 +43,7 @@ const Player = () => {
   return (
     <Window label="xaudio" className={styles.position}>
       <div className={styles.main}>
-        <audio
-          ref={audioRef}
-          src={currentTrack.url}
-          onEnded={onEnded}
-          onError={onError}
-          autoPlay={isPlaying}
-          onCanPlay={() => onLoaded(audioRef.current)}
-          onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
-        />
+        {audio}
         <HeaderLayout
           screen={screen}
           marquee={marquee}
